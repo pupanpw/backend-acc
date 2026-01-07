@@ -1,0 +1,27 @@
+
+Table users {
+  user_id uuid [primary key]
+  username varchar
+  picture_url varchar
+  role varchar
+  created_at timestamp
+}
+
+Table transactions {
+  id bigserial [primary key]
+  title varchar
+  amount integer
+  type varchar  // income | expense
+  status varchar // active | deleted
+  user_id uuid
+  source varchar // line
+  created_at timestamp
+}
+
+Table daily_summary {
+  id bigserial [primary key]
+  summary_date date
+  total_income integer
+  total_expense integer
+  created_at timestamp
+}
