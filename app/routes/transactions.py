@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.dto.transactions import TransactionPayload, TransactionResponse
 from app.config.database import SessionLocal
 from datetime import datetime
-from app import models
+from app.models.transactionModel import Transaction
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -19,12 +19,12 @@ def get_db():
 @router.post("/", response_model=TransactionResponse)
 def create_transaction(payload: TransactionPayload, db: Session = Depends(get_db)):
     try:
-        transaction = models.Transaction(
+        transaction = Transaction(
             title=payload.title,
             amount=payload.amount,
             type=payload.type.value,
-            user_id=payload.userId,
-            created_at=datetime.fromisoformat(payload.date)
+            user_id_line=payload.userIdLine,
+            created_at=datetime.now()
         )
         db.add(transaction)
         db.commit()

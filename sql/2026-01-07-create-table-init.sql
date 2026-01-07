@@ -31,3 +31,20 @@ CREATE TABLE daily_summary
 );
 CREATE INDEX idx_transactions_user ON transactions(user_id);
 CREATE INDEX idx_transactions_date ON transactions(created_at);
+
+
+ALTER TABLE users ADD COLUMN user_id_line varchar;
+
+
+-- ลบคอลัมน์ user_id เดิม
+ALTER TABLE transactions DROP COLUMN IF EXISTS user_id;
+
+-- เพิ่มคอลัมน์ user_id_line (ถ้ายังไม่มี)
+ALTER TABLE transactions ADD COLUMN
+IF NOT EXISTS user_id_line VARCHAR
+(255) NOT NULL;
+
+-- ตรวจสอบว่า index ใช้ user_id_line แทน
+CREATE INDEX
+IF NOT EXISTS idx_transactions_user_line ON transactions
+(user_id_line);

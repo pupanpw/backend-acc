@@ -1,4 +1,3 @@
-# app/dto/transactionsDto.py
 from pydantic import BaseModel
 from enum import Enum
 
@@ -12,8 +11,7 @@ class TransactionPayload(BaseModel):
     title: str
     amount: float
     type: TransactionType
-    userId: str
-    date: str
+    userIdLine: str
 
 
 class TransactionResponse(BaseModel):
