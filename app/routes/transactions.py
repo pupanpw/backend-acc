@@ -16,7 +16,7 @@ def get_db():
         db.close()
 
 
-@router.post("/", response_model=TransactionResponse)
+@router.post("/create", response_model=TransactionResponse)
 def create_transaction(payload: TransactionPayload, db: Session = Depends(get_db)):
     try:
         transaction = Transaction(
