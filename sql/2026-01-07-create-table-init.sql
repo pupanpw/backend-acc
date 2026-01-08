@@ -48,3 +48,36 @@ IF NOT EXISTS user_id_line VARCHAR
 CREATE INDEX
 IF NOT EXISTS idx_transactions_user_line ON transactions
 (user_id_line);
+
+
+ALTER TABLE daily_summary
+ADD COLUMN user_id_line VARCHAR NOT NULL;
+
+-- กำหนด unique constraint
+ALTER TABLE daily_summary
+ADD CONSTRAINT uq_daily_summary UNIQUE(summary_date, user_id_line);
+
+
+ALTER TABLE daily_summary
+ADD COLUMN total_balance NUMERIC DEFAULT 0;
+
+
+
+ALTER TABLE daily_summary
+ALTER COLUMN total_income TYPE NUMERIC(12,2),
+ALTER COLUMN total_expense TYPE NUMERIC(12,2),
+ALTER COLUMN total_balance TYPE NUMERIC(12,2);
+
+
+ALTER TABLE users
+ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
+
+ALTER TABLE daily_summary
+ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
+
+
+ALTER TABLE public.daily_summary RENAME TO period_summary;
+
+
+CREATE INDEX idx_daily_summary_user_date
+ON period_summary (user_id_line, summary_date);
