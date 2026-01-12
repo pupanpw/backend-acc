@@ -1,3 +1,5 @@
+from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 from enum import Enum
 
@@ -7,11 +9,25 @@ class TransactionType(str, Enum):
     expense = "expense"
 
 
+class FilterMode(str, Enum):
+    day = "day"
+    month = "month"
+    year = "year"
+
+
 class TransactionPayload(BaseModel):
     title: str
     amount: float
     type: TransactionType
     userIdLine: str
+    transactionAt: datetime
+
+
+class TransactionUpdatePayload(BaseModel):
+    title: Optional[str] = None
+    amount: Optional[float] = None
+    type: Optional[TransactionType] = None
+    transactionAt: Optional[datetime] = None
 
 
 class TransactionResponse(BaseModel):

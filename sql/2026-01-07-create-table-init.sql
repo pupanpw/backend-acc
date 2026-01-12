@@ -81,3 +81,17 @@ ALTER TABLE public.daily_summary RENAME TO period_summary;
 
 CREATE INDEX idx_daily_summary_user_date
 ON period_summary (user_id_line, summary_date);
+
+
+ALTER TABLE period_summary DROP CONSTRAINT IF EXISTS daily_summary_summary_date_key;
+ALTER TABLE period_summary
+ADD CONSTRAINT unique_summary_user UNIQUE (summary_date, user_id_line);
+
+ALTER TABLE transactions ADD COLUMN  transaction_at TIMESTAMP;
+
+UPDATE transactions
+SET transaction_at = created_at
+WHERE transaction_at IS NULL;
+
+CREATE INDEX idx_transactions_user_transaction_at
+ON transactions (user_id_line, transaction_at);

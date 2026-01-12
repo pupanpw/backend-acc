@@ -22,3 +22,4 @@ class Transaction(Base):
     status = Column(String(10), default="active")
     source = Column(String(20), default="line")
     created_at = Column(DateTime, default=datetime.now)
+    transaction_at = Column(DateTime, nullable=False)
