@@ -76,6 +76,24 @@ def get_transactions(
     )
 
 
+@router.get("/today")
+def get_today_transactions(
+    user_id_line: str,
+    db: Session = Depends(get_db)
+):
+    start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    end = start + timedelta(days=1)
+
+    return db.query(Transaction).filter(
+        and_(
+            Transaction.user_id_line == user_id_line,
+            Transaction.transaction_at >= start,
+            Transaction.transaction_at < end,
+            Transaction.status == "active"
+        )
+    ).order_by(Transaction.transaction_at.desc()).all()
+
+
 @router.put("/{transaction_id}")
 def update_transaction(
     transaction_id: int,
