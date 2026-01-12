@@ -1,3 +1,4 @@
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -129,14 +130,14 @@ def delete_transaction(
 
 
 @router.get("/today")
-def get_today_transactions(
-    user_id_line: str,
-    db: Session = Depends(get_db)
-):
-    start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+def get_today_transactions(user_id_line: str, db: Session = Depends(get_db)):
+    THAI_TZ = ZoneInfo("Asia/Bangkok")
+    now = datetime.now(THAI_TZ)
+
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end = start + timedelta(days=1)
 
-    return db.query(Transaction).filter(
+    transactions = db.query(Transaction).filter(
         and_(
             Transaction.user_id_line == user_id_line,
             Transaction.transaction_at >= start,
@@ -144,3 +145,5 @@ def get_today_transactions(
             Transaction.status == "active"
         )
     ).order_by(Transaction.transaction_at.desc()).all()
+
+    return transactions
