@@ -1,4 +1,4 @@
-name: Deploy Finance API to Raspberry Pi
+name: Deploy Finance API to UAT
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: SSH and deploy on Raspberry Pi
+      - name: SSH and deploy on UAT
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.PI_HOST }}
