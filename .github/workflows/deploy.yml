@@ -15,11 +15,15 @@ jobs:
 
       - name: Deploy Docker container
         run: |
-          cd ~/backend-acc
+          cd /home/pupan/project-acc/backend-acc
           docker stop finance-api || true
           docker rm finance-api || true
+
           git fetch origin
           git reset --hard origin/main
+
           docker rmi backend-acc-finance-api:latest || true
+
           docker build -t backend-acc-finance-api .
+
           docker run -d -p 8888:8000 --name finance-api backend-acc-finance-api
