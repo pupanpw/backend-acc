@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 from app.dto.transactions import FilterMode, TransactionPayload, TransactionResponse, TransactionUpdatePayload
 from app.config.database import SessionLocal
 from datetime import datetime, timedelta
+from app.models.periodSummaryModel import PeriodSummary
 from app.models.transactionModel import Transaction
 from app.utils.dateRange import resolve_date_range
-
+from sqlalchemy import and_, func, case
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 
@@ -126,7 +127,52 @@ def delete_transaction(
     tx.status = "inactive"
     db.commit()
 
-    return {"message": "Transaction deleted successfully"}
+    target_date = tx.transaction_at.date()
+
+    income_sum, expense_sum = db.query(
+        func.coalesce(
+            func.sum(
+                case((Transaction.type == "income", Transaction.amount))
+            ),
+            0
+        ),
+        func.coalesce(
+            func.sum(
+                case((Transaction.type == "expense", Transaction.amount))
+            ),
+            0
+        )
+    ).filter(
+        Transaction.user_id_line == user_id_line,
+        func.date(Transaction.transaction_at) == target_date,
+        Transaction.status == "active"
+    ).first()
+
+    ps = db.query(PeriodSummary).filter(
+        PeriodSummary.user_id_line == user_id_line,
+        PeriodSummary.summary_date == target_date
+    ).first()
+
+    if ps:
+        ps.total_income = income_sum
+        ps.total_expense = expense_sum
+        ps.total_balance = income_sum - expense_sum
+        ps.updated_at = func.now()
+    else:
+        ps = PeriodSummary(
+            user_id_line=user_id_line,
+            summary_date=target_date,
+            total_income=income_sum,
+            total_expense=expense_sum,
+            total_balance=income_sum - expense_sum,
+            created_at=func.now(),
+            updated_at=func.now()
+        )
+        db.add(ps)
+
+    db.commit()
+
+    return {"detail": "Transaction deleted (soft delete) and summary updated"}
 
 
 @router.get("/today")
