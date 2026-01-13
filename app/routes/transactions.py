@@ -132,13 +132,17 @@ def delete_transaction(
     income_sum, expense_sum = db.query(
         func.coalesce(
             func.sum(
-                case((Transaction.type == "income", Transaction.amount))
+                case(
+                    (Transaction.type == "income", Transaction.amount)
+                )
             ),
             0
         ),
         func.coalesce(
             func.sum(
-                case((Transaction.type == "expense", Transaction.amount))
+                case(
+                    (Transaction.type == "expense", Transaction.amount)
+                )
             ),
             0
         )
