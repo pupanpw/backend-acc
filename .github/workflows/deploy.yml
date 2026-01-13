@@ -1,0 +1,39 @@
+name: Deploy Finance API to Raspberry Pi
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: SSH and deploy on Raspberry Pi
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          script: |
+            cd /home/pupan/backend-acc
+            # 1️⃣ หยุดและลบ container เก่า
+            docker stop finance-api || true
+            docker rm finance-api || true
+
+            # 2️⃣ ดึงโค้ดใหม่
+            git fetch origin
+            git reset --hard origin/main
+
+            # 3️⃣ ลบ image เก่า
+            docker rmi backend-acc-finance-api:latest || true
+
+            # 4️⃣ Build ใหม่
+            docker build -t backend-acc-finance-api .
+
+            # 5️⃣ Run container ใหม่
+            docker run -d -p 8888:8000 --name finance-api backend-acc-finance-api
