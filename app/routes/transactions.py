@@ -179,6 +179,91 @@ def delete_transaction(
     return {"detail": "Transaction deleted (soft delete) and summary updated"}
 
 
+@router.post("/{transaction_id}/cancel")
+def cancel_transaction(
+    transaction_id: int,
+    user_id_line: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    tx = (
+        db.query(Transaction)
+        .filter(
+            Transaction.id == transaction_id,
+            Transaction.user_id_line == user_id_line,
+            Transaction.status == "active",
+        )
+        .first()
+    )
+
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    # 1) ปิดรายการเดิม
+    tx.status = "inactive"
+
+    # 2) สร้างรายการคืนยอด
+    refund = Transaction(
+        title=f"ยกเลิกการทำรายการ: {tx.title}",
+        amount=tx.amount,
+        type="income" if tx.type == "expense" else "expense",
+        user_id_line=tx.user_id_line,
+        transaction_at=tx.transaction_at,
+        created_at=datetime.now(),
+        source="auto",
+        status="active",
+    )
+
+    db.add(refund)
+
+    # 3) update summary ของวันนั้น (เหมือนโค้ดเดิมคุณ)
+    target_date = tx.transaction_at.date()
+
+    income_sum, expense_sum = db.query(
+        func.coalesce(
+            func.sum(
+                case((Transaction.type == "income", Transaction.amount))
+            ),
+            0
+        ),
+        func.coalesce(
+            func.sum(
+                case((Transaction.type == "expense", Transaction.amount))
+            ),
+            0
+        )
+    ).filter(
+        Transaction.user_id_line == user_id_line,
+        func.date(Transaction.transaction_at) == target_date,
+        Transaction.status == "active"
+    ).first()
+
+    ps = db.query(PeriodSummary).filter(
+        PeriodSummary.user_id_line == user_id_line,
+        PeriodSummary.summary_date == target_date
+    ).first()
+
+    if ps:
+        ps.total_income = income_sum
+        ps.total_expense = expense_sum
+        ps.total_balance = income_sum - expense_sum
+        ps.updated_at = func.now()
+    else:
+        ps = PeriodSummary(
+            user_id_line=user_id_line,
+            summary_date=target_date,
+            total_income=income_sum,
+            total_expense=expense_sum,
+            total_balance=income_sum - expense_sum,
+            created_at=func.now(),
+            updated_at=func.now()
+        )
+        db.add(ps)
+
+    db.commit()
+
+    return {"detail": "Transaction canceled and refund created"}
+
+
 @router.get("/today")
 def get_today_transactions(user_id_line: str, db: Session = Depends(get_db)):
     THAI_TZ = ZoneInfo("Asia/Bangkok")
