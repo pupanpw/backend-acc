@@ -75,6 +75,7 @@ def get_transactions(
                 Transaction.transaction_at >= start,
                 Transaction.transaction_at < end,
                 Transaction.status == "active",
+                Transaction.source != "auto",
             )
         )
         .order_by(Transaction.transaction_at.desc())
