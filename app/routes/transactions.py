@@ -7,8 +7,12 @@ from app.config.database import SessionLocal
 from datetime import datetime, timedelta
 from app.models.periodSummaryModel import PeriodSummary
 from app.models.transactionModel import Transaction
+from app.models.transactionTagModel import TransactionTag
 from app.utils.dateRange import resolve_date_range
 from sqlalchemy import and_, func, case
+from app.models.tagModel import Tag as TagModel
+from app.models.transactionTagModel import TransactionTag
+from app.utils.tags import make_slug, normalize_tag_name
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 
@@ -277,8 +281,114 @@ def get_today_transactions(user_id_line: str, db: Session = Depends(get_db)):
             Transaction.user_id_line == user_id_line,
             Transaction.transaction_at >= start,
             Transaction.transaction_at < end,
-            Transaction.status == "active"
+            # Transaction.status == "active"
         )
     ).order_by(Transaction.transaction_at.desc()).all()
 
     return transactions
+
+
+@router.post("/create/v2", response_model=TransactionResponse)
+def create_transaction(payload: TransactionPayload, db: Session = Depends(get_db)):
+    try:
+        transaction = Transaction(
+            title=payload.title,
+            amount=payload.amount,
+            type=payload.type.value,
+            user_id_line=payload.userIdLine,
+            transaction_at=payload.transactionAt,
+            created_at=datetime.now(),
+            status="active",
+        )
+        db.add(transaction)
+        db.flush()  # ได้ transaction.id โดยยังไม่ commit
+
+        # ---- handle tags (optional) ----
+        tags = payload.tags or []
+        cleaned = []
+        seen = set()
+        for t in tags:
+            n = normalize_tag_name(t)
+            if not n:
+                continue
+            key = n.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            cleaned.append(n)
+
+        if cleaned:
+            # 1) fetch existing tags for this user & these slugs
+            slugs = [make_slug(x) for x in cleaned]
+            existing = (
+                db.query(TagModel)
+                .filter(TagModel.user_id_line == payload.userIdLine, TagModel.slug.in_(slugs))
+                .all()
+            )
+            by_slug = {x.slug: x for x in existing}
+
+            tag_ids = []
+            for name in cleaned:
+                slug = make_slug(name)
+                tag = by_slug.get(slug)
+                if not tag:
+                    tag = TagModel(user_id_line=payload.userIdLine,
+                                   name=name, slug=slug)
+                    db.add(tag)
+                    db.flush()  # ได้ tag.id
+                    by_slug[slug] = tag
+
+                tag_ids.append(tag.id)
+
+            for tag_id in tag_ids:
+                db.add(TransactionTag(transaction_id=transaction.id, tag_id=tag_id))
+
+        db.commit()
+        db.refresh(transaction)
+
+        return {"id": transaction.id, "message": "Transaction created successfully"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/today/v2")
+def get_today_transactions_with_tags(user_id_line: str, db: Session = Depends(get_db)):
+    THAI_TZ = ZoneInfo("Asia/Bangkok")
+    now = datetime.now(THAI_TZ)
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = start + timedelta(days=1)
+
+    rows = (
+        db.query(Transaction, TagModel)
+        .outerjoin(TransactionTag, TransactionTag.transaction_id == Transaction.id)
+        .outerjoin(TagModel, TagModel.id == TransactionTag.tag_id)
+        .filter(
+            Transaction.user_id_line == user_id_line,
+            Transaction.transaction_at >= start,
+            Transaction.transaction_at < end,
+        )
+        .order_by(Transaction.transaction_at.desc())
+        .all()
+    )
+
+    result = {}
+    for tx, tag in rows:
+        if tx.id not in result:
+            result[tx.id] = {
+                "id": tx.id,
+                "title": tx.title,
+                "amount": tx.amount,
+                "type": tx.type,
+                "status": tx.status,
+                "source": tx.source,
+                "created_at": tx.created_at,
+                "transaction_at": tx.transaction_at,
+                "tags": []
+            }
+        if tag:
+            result[tx.id]["tags"].append(
+                {"id": tag.id, "name": tag.name, "slug": tag.slug})
+
+    return list(result.values())

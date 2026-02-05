@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes.transactions import router as transactions_router
 from app.routes.users import router as user_router
 from app.routes.periodSummary import router as period_summary
+from app.routes.tags import router as tags
 
 app = FastAPI(title="Finance Tracker API")
 
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(transactions_router)
 # app.include_router(user_router)
 app.include_router(period_summary)
+app.include_router(tags)
 
 
 @app.get("/")
