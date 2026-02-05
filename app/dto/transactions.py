@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
 from enum import Enum
 
@@ -21,6 +21,7 @@ class TransactionPayload(BaseModel):
     type: TransactionType
     userIdLine: str
     transactionAt: datetime
+    tags: Optional[List[str]] = []   # << เพิ่ม
 
 
 class TransactionUpdatePayload(BaseModel):

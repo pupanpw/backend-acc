@@ -1,9 +1,7 @@
 from sqlalchemy import Column, Integer, String, Numeric, Enum, DateTime
-from sqlalchemy.ext.declarative import declarative_base
 import enum
 from datetime import datetime
-
-Base = declarative_base()
+from app.config.database import Base
 
 
 class TransactionTypeEnum(str, enum.Enum):
