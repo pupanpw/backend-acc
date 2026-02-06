@@ -1,3 +1,4 @@
+from app.routes.report import router as report_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.transactions import router as transactions_router
@@ -24,6 +25,7 @@ app.include_router(transactions_router)
 # app.include_router(user_router)
 app.include_router(period_summary)
 app.include_router(tags)
+app.include_router(report_router)
 
 
 @app.get("/")

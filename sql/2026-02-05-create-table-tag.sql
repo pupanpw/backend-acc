@@ -23,3 +23,13 @@ CREATE INDEX IF NOT EXISTS idx_tt_tag_id ON transaction_tags(tag_id);
 
 ALTER TABLE transactions
 DROP COLUMN IF EXISTS tag;
+
+
+CREATE INDEX IF NOT EXISTS idx_tx_user_date
+  ON transactions(user_id_line, transaction_at);
+
+CREATE INDEX IF NOT EXISTS idx_tt_tx
+  ON transaction_tags(transaction_id);
+
+CREATE INDEX IF NOT EXISTS idx_tt_tag
+  ON transaction_tags(tag_id);
