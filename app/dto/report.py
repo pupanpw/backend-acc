@@ -4,8 +4,8 @@ from app.dto.transactions import FilterMode
 
 
 class ReportTagRequest(BaseModel):
-    user_id_line: str = Field(..., description="LINE user id")
-    mode: FilterMode = Field(..., description="today/date/month/year/range")
+    user_id_line: str
+    mode: FilterMode
 
     date: Optional[str] = None
     month: Optional[int] = None
@@ -18,12 +18,14 @@ class ReportTagRequest(BaseModel):
     include_others: bool = True
 
 
+# -------- summary --------
 class ReportSummaryDto(BaseModel):
     income: float
     expense: float
     net: float
 
 
+# -------- tags table --------
 class ReportTagRowDto(BaseModel):
     tag_id: int
     tag_name: str
@@ -34,20 +36,26 @@ class ReportTagRowDto(BaseModel):
     color_index: int
 
 
-class ReportChartPointDto(BaseModel):
+# -------- charts --------
+class ChartItem(BaseModel):
     x: str
     y: float
-    label: Optional[str] = None
 
 
-class ReportChartsDto(BaseModel):
-    bar: List[ReportChartPointDto]
-    donut: List[ReportChartPointDto]
+class ChartSet(BaseModel):
+    bar: List[ChartItem]
+    donut: List[ChartItem]
 
 
+class ChartsByType(BaseModel):
+    expense: ChartSet
+    income: ChartSet
+
+
+# -------- response --------
 class ReportTagResponse(BaseModel):
     start: str
     end: str
     summary: ReportSummaryDto
     tags: List[ReportTagRowDto]
-    charts: ReportChartsDto
+    charts: ChartsByType

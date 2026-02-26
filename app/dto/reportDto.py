@@ -31,18 +31,23 @@ class ReportTagRowDto(BaseModel):
     expense: float
     net: float
     percent_of_expense: float
+    percent_of_income: float
     color_index: int
 
 
-class ReportChartPointDto(BaseModel):
+class ChartItem(BaseModel):
     x: str
     y: float
-    label: Optional[str] = None
 
 
-class ReportChartsDto(BaseModel):
-    bar: List[ReportChartPointDto]
-    donut: List[ReportChartPointDto]
+class ChartSet(BaseModel):
+    bar: List[ChartItem]
+    donut: List[ChartItem]
+
+
+class ChartsByType(BaseModel):
+    expense: ChartSet
+    income: ChartSet
 
 
 class ReportTagResponse(BaseModel):
@@ -50,4 +55,4 @@ class ReportTagResponse(BaseModel):
     end: str
     summary: ReportSummaryDto
     tags: List[ReportTagRowDto]
-    charts: ReportChartsDto
+    charts: ChartsByType

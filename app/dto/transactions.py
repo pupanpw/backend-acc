@@ -13,6 +13,10 @@ class FilterMode(str, Enum):
     day = "day"
     month = "month"
     year = "year"
+    today = "today"
+    seven_days = "7d"
+    custom = "custom"
+    range = "range"
 
 
 class TransactionPayload(BaseModel):
